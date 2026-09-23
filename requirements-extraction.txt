@@ -1,0 +1,7 @@
+# Text measurement environment for scripts/extract_features.py.
+# Python 3.9-3.12; use a separate environment from requirements-training.txt.
+# If paddlepaddle reports a NumPy ABI error, pin "numpy<2" in this environment.
+paddleocr>=2.7
+paddlepaddle>=2.6
+opencv-python>=4.8
+numpy>=1.24
