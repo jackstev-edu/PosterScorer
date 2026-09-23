@@ -1,0 +1,24 @@
+{
+  "source_url": "https://huggingface.co/datasets/creative-graphic-design/PosterIQ",
+  "source_revision": "02bddb802658cb952d693d289af230644401bb26",
+  "source_config": "overall_rating",
+  "source_split": "test",
+  "rows": 219,
+  "score_source_field": "gt_json",
+  "score_scale": [
+    1,
+    10
+  ],
+  "observed_score_range": [
+    2.0,
+    8.8
+  ],
+  "images": "Original embedded image bytes; no resizing or re-encoding.",
+  "declared_source_license": "non-commercial-research-license",
+  "source_shard_sha256": {
+    "test-00000-of-00004.parquet": "893092bb5c8830d4a516ee6bad85b9dbf26f46096fb248b6d956fe8264394e87",
+    "test-00001-of-00004.parquet": "66f0d99e47936c4eec55337abdfb0cfc2dc2ba2479923d83f8904d50ebbad115",
+    "test-00002-of-00004.parquet": "5e6031b1e869bf7bb44f42863628884ce7dd2b62a25cb195790310b6309ccc41",
+    "test-00003-of-00004.parquet": "810b7da1a269902ec9829092f5c5e2cdccd738f062639c7cc6e5d9b84c7f8d6c"
+  }
+}
