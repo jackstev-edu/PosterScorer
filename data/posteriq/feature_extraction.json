@@ -1,0 +1,32 @@
+{
+  "rows": 219,
+  "feature_count": 14,
+  "feature_columns": [
+    "img_width_px",
+    "img_height_px",
+    "aspect_ratio",
+    "word_count",
+    "char_count",
+    "text_block_count",
+    "text_area_frac",
+    "graphic_area_frac",
+    "background_area_frac",
+    "text_share",
+    "text_to_graphic_ratio",
+    "mean_text_height_frac",
+    "max_text_height_frac",
+    "text_height_std_frac"
+  ],
+  "extractor_sha256": "3d9adc00b8824184045273e5e5746d7edbbf4882fa2f4d26d2a4bab00d13dd43",
+  "tesseract_version": "5.5.2",
+  "python_packages": {
+    "pytesseract": "0.3.13",
+    "Pillow": "12.3.0",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3"
+  },
+  "omp_thread_limit": "1",
+  "no_detected_words": 15,
+  "failed_images": [],
+  "note": "Measurements use features.py unchanged; OCR and background masks are estimates, not annotations."
+}
