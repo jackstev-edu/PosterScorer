@@ -78,7 +78,7 @@ def main():
 
     csv_path = args.output_dir / "posters.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "image_path", "overall_design_score"])
+        writer = csv.DictWriter(f, fieldnames=["id", "image_path", "overall_design_score"], lineterminator="\n")
         writer.writeheader()
         writer.writerows(records)
     checksums.append(f"{digest(csv_path.read_bytes())}  posters.csv")
