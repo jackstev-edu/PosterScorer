@@ -3,16 +3,24 @@ title: Poster Scorer
 emoji: 🖼️
 colorFrom: blue
 colorTo: yellow
-sdk: gradio
-sdk_version: 6.28.0
-python_version: "3.12"
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 ---
 
 # PosterScorer
 
-219 poster images paired with their overall design scores, ready for text-density analysis and regression.
+A trained poster design scorer: upload an image, receive a **continuous score from 1 to 10** and **one suggested improvement**. The committed model uses 14 OCR and layout measurements extracted from 219 PosterIQ posters.
+
+## Start here
+
+- **Claude / GUI agent:** read [CLAUDE.md](CLAUDE.md), then the [GUI integration contract](docs/gui-handoff.md).
+- **Host the model:** follow [Hugging Face Spaces deployment](docs/huggingface-spaces.md). The trained model is already bundled; no retraining is needed.
+- **Run locally:** use Python 3.12, install Tesseract and `requirements-space.txt`, then run `uvicorn api:app --host 0.0.0.0 --port 7860`.
+
+The pipeline is: poster → shared OCR extractor → 14 numeric features → trained AutoGluon regressor → score + counterfactual feedback. Feedback is generated from the score model using a fitted training-data recipe; it is not a separately supervised feedback model.
+
+## Dataset
 
 - **[Score table](data/posteriq/posters.csv)** — one row per image: ID, image path, overall score, and 14 extracted numeric features.
 - **Model splits:** [train](data/posteriq/train.csv) (153), [validation](data/posteriq/validation.csv) (33), and [test](data/posteriq/test.csv) (33), approximately 70/15/15, with no overlap.
@@ -73,46 +81,17 @@ The script downloads a pinned source revision, checks source checksums, verifies
 
 Regenerate the model splits with `python scripts/split_posteriq.py` (Python standard library only). The reproducible split uses seed 42 and balances three score bands. Use train for fitting, validation for tuning, and reserve test for final evaluation.
 
-## Poster Scorer app
+## Model backend; your GUI stays separate
 
-A Gradio app ([app.py](app.py)) that takes an uploaded poster and gives a 0 to 100 score for its balance of text and graphics.
+[api.py](api.py) hosts the trained model. **POST `/score`** accepts a multipart image field named `image` and returns JSON with `score`, `feedback_sentence`, feature measurements, ranked suggested changes and a PNG overlay. **GET `/health`** confirms readiness; **GET `/docs`** provides interactive API documentation.
 
-1. [features.py](features.py) runs Tesseract OCR and a background-color analysis to measure text area, graphic area, and text size. The result is one tabular row (`FEATURE_COLUMNS`).
-2. A trained tabular model scores that row. Until a model is published, a labeled baseline rule scores it instead.
-3. The app shows the score, a verdict, the feature table, and an overlay of what was measured.
-
-The score reflects text versus graphic **area** only. It does not judge color, content, typography, or overall design quality. Gradient or photo backgrounds may be counted as graphics.
-
-| File | Purpose |
-|---|---|
-| `app.py` | Gradio interface and scoring callback |
-| `features.py` | Shared feature extraction for training and the app |
-| `batch_extract.py` | Builds a feature CSV from a folder of posters |
-| `tests/test_contract.py` | Output-shape and feature-contract checks |
-| `examples/` | Synthetic example posters |
-| `requirements.txt` | Python packages for the app |
-| `packages.txt` | System packages for Hugging Face Spaces (Tesseract) |
-
-### Run locally
+The existing [app.py](app.py) GUI is untouched. Your GUI agent only needs to send the uploaded file to this backend. Read [CLAUDE.md](CLAUDE.md) and the [copy-paste frontend integration](docs/gui-handoff.md).
 
 ```sh
-python -m pip install -r requirements.txt
-python app.py
+docker build -t poster-scorer .
+docker run --rm -p 7860:7860 poster-scorer
+# Test with your own poster:
+curl -X POST http://localhost:7860/score -F "image=@poster.png"
 ```
 
-Tesseract must be installed. On Windows, install it and set `TESSERACT_CMD` to the path of `tesseract.exe` if it is not on PATH.
-
-### Extract features from a folder of posters
-
-```sh
-python batch_extract.py --input posters/ --output data/app_features.csv --overlays overlays/
-```
-
-To use a trained model in the app, publish the predictor, set `MODEL_REPO_ID` and `MODEL_REVISION` in `app.py`, and uncomment `autogluon.tabular` in `requirements.txt`. The app checks at startup that the model's features match `FEATURE_COLUMNS` in `features.py`.
-
-### Test
-
-```sh
-python -m pip install pytest
-pytest -q
-```
+Deploy the same Dockerfile as a Hugging Face **Docker Space** using [these instructions](docs/huggingface-spaces.md). The held-out 33-poster test result is **RMSE 1.122, MAE 0.882, R² 0.408** on the original 1–10 scale. See [saved metrics](artifacts/metrics.json). Suggestions estimate changes the model favors; they are not causal explanations.

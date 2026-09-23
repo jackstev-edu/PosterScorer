@@ -14,3 +14,5 @@ flagged/
 # Raw posters and overlays stay out of git; publish data to the Hub instead
 posters/
 overlays/
+
+space-export*/
