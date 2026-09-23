@@ -29,7 +29,8 @@ def main():
     if args.sdk == "gradio":
         shutil.copy2(ROOT / "deployment/huggingface/hf_space.py", destination / "hf_space.py")
         shutil.copy2(ROOT / "deployment/huggingface/README.md", destination / "README.md")
-        (destination / "requirements.txt").write_text("-r requirements-space.txt\ngradio==6.28.0\n")
+        requirements = (ROOT / "requirements-inference.txt").read_text() + "\n" + "\n".join(line for line in (ROOT / "requirements-space.txt").read_text().splitlines() if not line.startswith("-r ")) + "\ngradio==6.28.0\n"
+        (destination / "requirements.txt").write_text(requirements)
         (destination / "packages.txt").write_text("tesseract-ocr\nlibgomp1\n")
         (destination / "Dockerfile").unlink()
     print(f"Ready: {destination} ({len(FILES)} files)")
