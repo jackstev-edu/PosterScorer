@@ -1,6 +1,6 @@
 # Host the trained model on Hugging Face Spaces
 
-**Current free-account route:** run `python scripts/prepare_space.py --output space-export-free` (defaults to Gradio), create a Gradio Space using the free hardware available on your account, and upload that folder’s contents. It serves the same FastAPI `/score` and `/health` endpoints plus a minimal landing page; your teammate’s GUI is untouched. Some accounts restrict Docker to paid plans. The Docker alternative below is available using `--sdk docker`.
+**Current free-account route:** run `python scripts/prepare_space.py --output space-export-free` (defaults to Gradio), create a Gradio Space using **ZeroGPU Free** on this account, and upload that folder’s contents. It serves the same FastAPI `/score` and `/health` endpoints plus a minimal landing page; your teammate’s GUI is untouched. Some accounts restrict Docker to paid plans. The Docker alternative below is available using `--sdk docker`.
 
 This is a **backend only**. Your teammate owns the GUI. The repository includes a trained model; hosting requires no training, GPU, or separate model download.
 
@@ -47,3 +47,5 @@ The export includes `api.py`, `Dockerfile`, `requirements-space.txt`, `requireme
 CORS allows browser uploads from any origin without cookies; restrict origins if your deployment needs it. Accepted images must be at least 200×200, no more than 20 MB and no more than 40 million pixels. Uploads are processed in memory. PNG overlays are returned as base64 strings.
 
 The bundle was trained and inference-tested on macOS/Python 3.12. A Linux Docker/Space build is still the deployment verification step; no live Space is claimed here. The original PosterIQ dataset declares a non-commercial research license; see [source provenance](../data/posteriq/README.md). This setup grants no additional source-data or model rights.
+
+The live free host uses the ZeroGPU request wrapper required by Hugging Face. The underlying tabular model still computes on CPU. Requests through the custom `/score` route use the Space’s available quota; show a retry state if hosting quota or capacity is exhausted.

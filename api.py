@@ -37,6 +37,10 @@ def health():
     return {"status": "ok"}
 
 
+def run_inference(poster):
+    return scorer.score_image(poster)
+
+
 @app.post("/score")
 def score(image: UploadFile = File(...)):
     """Upload a raster image; return score, feedback, measurements and PNG overlay."""
@@ -56,7 +60,7 @@ def score(image: UploadFile = File(...)):
         raise HTTPException(503, "Model is loading")
     try:
         with scoring_lock:
-            result = scorer.score_image(poster)
+            result = run_inference(poster)
         overlay = result.pop("overlay")
         buffer = io.BytesIO()
         overlay.save(buffer, format="PNG")
