@@ -3,3 +3,7 @@
 .cache/
 __pycache__/
 *.pyc
+models/
+AutogluonModels/
+.ipynb_checkpoints/
+data/posteriq/features.csv

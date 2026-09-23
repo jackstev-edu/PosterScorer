@@ -1,0 +1,4 @@
+# Python 3.10-3.13; use a separate environment from requirements-data.txt.
+autogluon.tabular[lightgbm]==1.5.0
+Pillow==12.3.0
+typing-extensions>=4.10,<5
