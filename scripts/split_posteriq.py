@@ -12,8 +12,9 @@ FIELDS = ["id", "image_path", "overall_design_score"]
 def main():
     with (DATA_DIR / "posters.csv").open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        if reader.fieldnames != FIELDS:
-            raise ValueError(f"Expected columns: {FIELDS}")
+        if not set(FIELDS).issubset(reader.fieldnames or []):
+            raise ValueError(f"Required columns: {FIELDS}")
+        output_fields = reader.fieldnames
         rows = list(reader)
     if len(rows) != 219 or len({row["id"] for row in rows}) != 219:
         raise ValueError("Expected 219 unique poster IDs")
@@ -43,7 +44,7 @@ def main():
         rng.shuffle(split)
         path = DATA_DIR / f"{name}.csv"
         with path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=FIELDS, lineterminator="\n")
+            writer = csv.DictWriter(f, fieldnames=output_fields, lineterminator="\n")
             writer.writeheader()
             writer.writerows(split)
         print(f"{name}: {len(split)} posters ({len(split) / len(rows):.2%})")

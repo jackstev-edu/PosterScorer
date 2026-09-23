@@ -1,0 +1,58 @@
+{
+  "target": "overall_design_score",
+  "feature_columns": [
+    "img_width_px",
+    "img_height_px",
+    "aspect_ratio",
+    "word_count",
+    "char_count",
+    "text_block_count",
+    "text_area_frac",
+    "graphic_area_frac",
+    "background_area_frac",
+    "text_share",
+    "text_to_graphic_ratio",
+    "mean_text_height_frac",
+    "max_text_height_frac",
+    "text_height_std_frac"
+  ],
+  "best_model": "WeightedEnsemble_L2",
+  "training_mean_score": 4.966013071895425,
+  "split_counts": {
+    "train": 153,
+    "validation": 33,
+    "test": 33
+  },
+  "time_limit_seconds": 120,
+  "test_evaluated": true,
+  "source_sha256": {
+    "features.csv": "74f28ab729bb14e17c95e8bae97785f628c5abfe2a006603d10b44169ee3bd1a",
+    "train.csv": "ddfe5c0274e66e601e3dbed4e2c7beab81c850b56460d87720fd4cddce708072",
+    "validation.csv": "bcb06d2ce78c083a449c3dec3797e0aca6ebd5628953b4fb57c9cf33d9307a9d",
+    "test.csv": "9d06fab42b3767eaa56d1ba39ca2b1a1327d1e53ebc74a2a0a6252b921169432"
+  },
+  "validation": {
+    "model": {
+      "rmse": 1.3553652139140786,
+      "mae": 1.0202325098442309,
+      "r2": 0.14473797769051688
+    },
+    "mean_baseline": {
+      "rmse": 1.4805032624928858,
+      "mae": 1.1302436125965538,
+      "r2": -0.020481779973370973
+    }
+  },
+  "test": {
+    "model": {
+      "rmse": 1.1216369828548114,
+      "mae": 0.8820085554411917,
+      "r2": 0.40776126575483496
+    },
+    "mean_baseline": {
+      "rmse": 1.4643632425908835,
+      "mae": 1.2090314913844327,
+      "r2": -0.009461605012558216
+    }
+  }
+}
