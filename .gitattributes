@@ -1,4 +1,7 @@
 *.csv text eol=lf
 SHA256SUMS text eol=lf
+# The model manifest hashes features.py, so Python files keep LF on every OS
+*.py text eol=lf
 *.jpg binary
 *.png binary
+*.zip binary

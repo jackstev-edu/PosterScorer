@@ -2,15 +2,19 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from features import FEATURE_COLUMNS
+
 DATA_DIR = ROOT / "data/posteriq"
 TARGET = "overall_design_score"
-DEFAULT_FEATURES = ["character_count", "text_density", "aspect_ratio"]
+DEFAULT_FEATURES = list(FEATURE_COLUMNS)
 RESERVED = {"id", "image_path", TARGET, "split"}
 
 
@@ -32,7 +36,7 @@ def load_splits(data_dir, features_csv, feature_columns):
         raise ValueError("IDs, image paths, split names, and the target cannot be input features")
     if not features_csv.exists():
         raise FileNotFoundError(
-            f"Create {features_csv} from features_template.csv and fill in your measurements first."
+            f"Missing {features_csv}. Pull the extracted feature table or run the batch extractor first."
         )
     features = read_table(features_csv)
     missing = set(feature_columns) - set(features.columns)
@@ -44,11 +48,11 @@ def load_splits(data_dir, features_csv, feature_columns):
         if np.isinf(features[column]).any():
             raise ValueError(f"{column}: infinite values are not allowed")
         measured = features[column].dropna()
-        if column == "text_density" and not measured.between(0, 1).all():
-            raise ValueError("text_density must be a fraction between 0 and 1")
-        if column in {"character_count", "word_count"} and (measured < 0).any():
+        if (column.endswith("_frac") or column in {"text_density", "text_share"}) and not measured.between(0, 1).all():
+            raise ValueError(f"{column} must be a fraction between 0 and 1")
+        if column in {"character_count", "char_count", "word_count", "text_block_count", "text_to_graphic_ratio"} and (measured < 0).any():
             raise ValueError(f"{column} cannot be negative")
-        if column in {"aspect_ratio", "width_px", "height_px"} and (measured <= 0).any():
+        if column in {"aspect_ratio", "width_px", "height_px", "img_width_px", "img_height_px"} and (measured <= 0).any():
             raise ValueError(f"{column} must be positive")
 
     master = read_table(data_dir / "posters.csv").set_index("id")

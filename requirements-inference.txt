@@ -1,4 +1,4 @@
-# Gradio Space runtime; versions match the trained bundle (requirements-inference.txt, artifacts/model_manifest.json)
+# Python 3.12; trained bundle runtime. Install Tesseract separately.
 autogluon.tabular[lightgbm]==1.5.0
 numpy==2.3.5
 pandas==2.3.3
