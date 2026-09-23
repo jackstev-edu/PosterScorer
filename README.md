@@ -94,4 +94,4 @@ docker run --rm -p 7860:7860 poster-scorer
 curl -X POST http://localhost:7860/score -F "image=@poster.png"
 ```
 
-Deploy the same Dockerfile as a Hugging Face **Docker Space** using [these instructions](docs/huggingface-spaces.md). The held-out 33-poster test result is **RMSE 1.122, MAE 0.882, R² 0.408** on the original 1–10 scale. See [saved metrics](artifacts/metrics.json). Suggestions estimate changes the model favors; they are not causal explanations.
+Use the [Hugging Face deployment instructions](docs/huggingface-spaces.md) for the free Gradio host adapter or the Docker alternative. `python scripts/prepare_space.py` packages the free Gradio route without changing the teammate-owned GUI. The held-out 33-poster test result is **RMSE 1.122, MAE 0.882, R² 0.408** on the original 1–10 scale. See [saved metrics](artifacts/metrics.json). Suggestions estimate changes the model favors; they are not causal explanations.

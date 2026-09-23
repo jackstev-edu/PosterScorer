@@ -1,10 +1,12 @@
 # Host the trained model on Hugging Face Spaces
 
+**Current free-account route:** run `python scripts/prepare_space.py --output space-export-free` (defaults to Gradio), create a Gradio Space using the free hardware available on your account, and upload that folder’s contents. It serves the same FastAPI `/score` and `/health` endpoints plus a minimal landing page; your teammate’s GUI is untouched. Some accounts restrict Docker to paid plans. The Docker alternative below is available using `--sdk docker`.
+
 This is a **backend only**. Your teammate owns the GUI. The repository includes a trained model; hosting requires no training, GPU, or separate model download.
 
 ## Deploy in five steps
 
-1. Run `python scripts/prepare_space.py` from this repository. This creates `space-export/` containing the runtime and trained bundle, without the dataset images.
+1. Run `python scripts/prepare_space.py --sdk docker` from this repository. This creates `space-export/` containing the runtime and trained bundle, without the dataset images.
 2. Open [Create a Space](https://huggingface.co/new-space). Choose your namespace/name and select **Docker → Blank**, with CPU hardware.
 3. Upload **the contents** of `space-export/` to the Space root, preserving directories. Replace the generated README with ours. `Dockerfile` must be at the root.
 4. Wait for the build to become Running. Open the Space's direct `https://YOUR-SPACE-SUBDOMAIN.hf.space/health` URL. It must return `{"status":"ok"}`. Find the actual direct URL in the Space embed/open menu; do not guess it from the repository name.
