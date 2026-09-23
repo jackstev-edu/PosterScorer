@@ -1,8 +1,9 @@
-"""Poster Scorer: Gradio app that scores a poster's text to graphic balance.
+"""Poster Scorer: Gradio app that scores an uploaded poster.
 
 Pipeline: poster image -> OCR + pixel analysis (features.py) -> one tabular
-row -> trained model -> 0-100 score. Until a trained model is published,
-a clearly labeled baseline rule produces the score instead.
+row -> trained model -> predicted PosterIQ design score on its 1-10 scale.
+Until a trained model is published, a clearly labeled baseline rule scores
+text to graphic balance from 0 to 100 instead.
 """
 
 import tempfile
@@ -24,6 +25,11 @@ ZIP_FILENAME = "autogluon_predictor_dir.zip"
 LOCAL_MODEL_DIR = Path("model")  # Optional unzipped predictor committed to the repo
 EXAMPLES_DIR = Path("examples")
 
+# Trained model settings, on the PosterIQ overall_design_score scale
+MODEL_SCORE_RANGE = (1.0, 10.0)
+LOWER_QUARTILE = 4.0  # Dataset quartiles of overall_design_score
+UPPER_QUARTILE = 5.9
+
 # Baseline rule settings, used only when no trained model is available
 BASELINE_TARGET_SHARE = 0.35  # Placeholder ideal text share, replace after EDA
 BASELINE_WIDTH = 0.25  # How quickly the baseline score falls off
@@ -40,8 +46,20 @@ def _safe_extract(archive, dest):
         z.extractall(dest)
 
 
+def check_predictor(predictor):
+    """Startup contract check; returns the model's feature columns."""
+    features = list(predictor.features())
+    unknown = sorted(set(features) - set(FEATURE_COLUMNS))
+    if unknown:
+        # The model may use a subset, but every column must come from features.py
+        raise ValueError(f"Model features not produced by features.py: {unknown}")
+    if predictor.problem_type != "regression":
+        raise ValueError("App expects a regression model for overall_design_score.")
+    return features
+
+
 def load_predictor():
-    """Return (predictor or None, human-readable source label)."""
+    """Return (predictor or None, model feature columns or None, human-readable source label)."""
     model_dir = None
     if LOCAL_MODEL_DIR.exists() and any(LOCAL_MODEL_DIR.iterdir()):
         model_dir = LOCAL_MODEL_DIR  # Local folder wins so offline dev works
@@ -52,18 +70,31 @@ def load_predictor():
         model_dir = Path(tempfile.mkdtemp(prefix="postscorer_model_"))
         _safe_extract(archive, model_dir)
     if model_dir is None:
-        return None, "Baseline rule (no trained model loaded yet)"
+        return None, None, "Baseline rule (no trained model loaded yet)"
 
     from autogluon.tabular import TabularPredictor  # Heavy import, only when a model exists
 
     predictor = TabularPredictor.load(str(model_dir))
-    # Contract checks: fail at startup, not on a user's upload
-    assert set(predictor.features()) == set(FEATURE_COLUMNS), "Model features differ from features.py."
-    assert predictor.problem_type == "regression", "App expects a 0-100 regression score."
-    return predictor, f"Trained model: {predictor.model_best}"
+    features = check_predictor(predictor)  # Fail at startup, not on a user's upload
+    return predictor, features, f"Trained model: {predictor.model_best}"
 
 
-PREDICTOR, MODEL_SOURCE = load_predictor()
+PREDICTOR, MODEL_FEATURES, MODEL_SOURCE = load_predictor()
+
+# Labels switch with the scoring mode so the UI never mixes the two scales
+if PREDICTOR is None:
+    TITLE = "Poster Scorer: text balance baseline"
+    INTRO = "Upload a poster to score its balance of text and graphics from 0 to 100 with a placeholder rule. "
+    SCORE_LABEL = "Score (0-100)"
+    SCOPE_NOTE = "This score reflects text versus graphic area only, not color, content, or overall design quality."
+else:
+    TITLE = "Poster Scorer: predicted design score"
+    INTRO = "Upload a poster to predict its PosterIQ overall design score on a 1 to 10 scale. "
+    SCORE_LABEL = "Predicted design score (1-10)"
+    SCOPE_NOTE = (
+        "The model predicts PosterIQ overall design quality from text and layout measurements. "
+        "It does not measure whether adding or removing text would improve the poster."
+    )
 
 
 def baseline_score(row):
@@ -72,8 +103,8 @@ def baseline_score(row):
     return 100.0 * float(np.exp(-0.5 * z * z))
 
 
-def score_band(score):
-    """Map a numeric score to a short verdict."""
+def baseline_band(score):
+    """Map a 0-100 baseline score to a short verdict."""
     if score >= 75:
         return "Well balanced"
     if score >= 50:
@@ -81,6 +112,15 @@ def score_band(score):
     if score >= 25:
         return "Needs rebalancing"
     return "Poorly balanced"
+
+
+def design_band(score):
+    """Map a 1-10 predicted design score to its dataset quartile band."""
+    if score < LOWER_QUARTILE:
+        return "Below typical"
+    if score < UPPER_QUARTILE:
+        return "Typical"
+    return "Above typical"
 
 
 def lean_note(row):
@@ -119,24 +159,23 @@ def score_poster(image):
         # Nearly blank input: a score here would be meaningless
         return None, "", table, overlay, "Almost no text or graphics were detected. Check that the image is a poster."
 
-    frame = pd.DataFrame([row], columns=FEATURE_COLUMNS)  # One row in training column order
+    # Round before banding so the shown score and its verdict always agree
     if PREDICTOR is None:
-        score = baseline_score(row)
+        score = round(float(np.clip(baseline_score(row), 0, 100)), 1)
+        band = baseline_band(score)
     else:
-        score = float(PREDICTOR.predict(frame).iloc[0])
-    score = float(np.clip(score, 0, 100))  # Regressors can overshoot the label range
+        frame = pd.DataFrame([row], columns=MODEL_FEATURES)  # Only the columns the model was trained on
+        score = round(float(np.clip(PREDICTOR.predict(frame).iloc[0], *MODEL_SCORE_RANGE)), 1)  # Regressors can overshoot
+        band = design_band(score)
 
-    status = (
-        f"{lean_note(row)} Source: {MODEL_SOURCE}. "
-        "This score reflects text versus graphic area only, not color, content, or overall design quality."
-    )
-    return round(score, 1), score_band(score), table, overlay, status
+    status = f"{lean_note(row)} Source: {MODEL_SOURCE}. {SCOPE_NOTE}"
+    return score, band, table, overlay, status
 
 
-with gr.Blocks(title="Poster Scorer") as demo:
+with gr.Blocks(title=TITLE) as demo:
     gr.Markdown(
-        "# Poster Scorer\n"
-        "Upload a poster to score its balance of text and graphics from 0 to 100. "
+        f"# {TITLE}\n"
+        f"{INTRO}"
         "The overlay shows what was measured: **orange boxes** are detected text, "
         "**blue tint** is graphic area."
     )
@@ -145,12 +184,12 @@ with gr.Blocks(title="Poster Scorer") as demo:
             image_in = gr.Image(type="pil", sources=["upload", "clipboard"], label="Poster")
             score_btn = gr.Button("Score poster", variant="primary")
         with gr.Column():
-            score_out = gr.Number(label="Score (0-100)", precision=1, interactive=False)
+            score_out = gr.Number(label=SCORE_LABEL, precision=1, interactive=False)
             band_out = gr.Textbox(label="Verdict", interactive=False)
             status_out = gr.Textbox(label="Interpretation or next step", interactive=False, lines=3)
     with gr.Row():
         overlay_out = gr.Image(label="What the model measured", interactive=False)
-        table_out = gr.Dataframe(label="Extracted features (model input)", interactive=False)
+        table_out = gr.Dataframe(label="Extracted features", interactive=False)
 
     outputs = [score_out, band_out, table_out, overlay_out, status_out]
     score_btn.click(score_poster, image_in, outputs, api_name="score_poster", concurrency_limit=2)

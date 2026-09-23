@@ -1,5 +1,6 @@
 .DS_Store
 .venv/
+venv/
 .cache/
 __pycache__/
 *.pyc
@@ -7,3 +8,11 @@ models/
 AutogluonModels/
 .ipynb_checkpoints/
 data/posteriq/features.csv
+data/posteriq/app_features.csv
+# Gradio app
+.gradio/
+flagged/
+.pytest_cache/
+# Raw posters and overlays stay out of git; publish data to the Hub instead
+posters/
+overlays/

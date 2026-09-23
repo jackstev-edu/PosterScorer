@@ -4,5 +4,5 @@ pillow>=10.1
 numpy
 pandas
 huggingface_hub
-# Uncomment once the trained AutoGluon model is published (matches class version)
-# autogluon.tabular==1.6.1
+# Uncomment once the trained model is published; must match the training version in requirements-training.txt
+# autogluon.tabular[lightgbm]==1.5.0

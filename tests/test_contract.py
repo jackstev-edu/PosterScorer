@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # Import app from repo root
@@ -41,3 +42,25 @@ def test_text_share_orders_examples():
     share = {n: extract_features(Image.open(EXAMPLES / f"{n}.png"))[0]["text_share"]
              for n in ["text_heavy", "balanced", "graphic_heavy"]}
     assert share["text_heavy"] > share["balanced"] > share["graphic_heavy"]
+
+
+class FakePredictor:
+    """Stands in for a loaded TabularPredictor in the startup check."""
+
+    problem_type = "regression"
+
+    def __init__(self, features):
+        self._features = features
+
+    def features(self):
+        return self._features
+
+
+def test_feature_subset_passes_startup_check():
+    subset = ["char_count", "text_area_frac", "aspect_ratio"]
+    assert app.check_predictor(FakePredictor(subset)) == subset
+
+
+def test_unknown_feature_fails_startup_check():
+    with pytest.raises(ValueError, match="text_density"):
+        app.check_predictor(FakePredictor(["char_count", "text_density"]))
