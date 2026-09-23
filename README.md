@@ -16,6 +16,7 @@ A trained poster design scorer: upload an image, receive a **continuous score fr
 
 - **Claude / GUI agent:** read [CLAUDE.md](CLAUDE.md), then the [GUI integration contract](docs/gui-handoff.md).
 - **Host the model:** follow [Hugging Face Spaces deployment](docs/huggingface-spaces.md). The trained model is already bundled; no retraining is needed.
+- **Web app:** [app.py](app.py) is a Gradio interface that shows the score, the feedback sentence, and what was measured; see [Gradio app](#gradio-app-hugging-face-space).
 - **Run locally:** use Python 3.12, install Tesseract and `requirements-space.txt`, then run `uvicorn api:app --host 0.0.0.0 --port 7860`.
 
 The pipeline is: poster → shared OCR extractor → 14 numeric features → trained AutoGluon regressor → score + counterfactual feedback. Feedback is generated from the score model using a fitted training-data recipe; it is not a separately supervised feedback model.
@@ -57,7 +58,7 @@ result = scorer.score_image(pil_image)
 print(result["score"], result["feedback_sentence"])
 ```
 
-The fitted regressor predicts the original **1–10 overall design score**. Its feedback engine tests coherent feature changes against that same model and returns one sentence. Feedback is model-estimated guidance, not separately labeled training data or a proven cause of design quality. The standalone Gradio baseline below uses a different 0–100 scale; use the wrapper for the trained model.
+The fitted regressor predicts the original **1–10 overall design score**. Its feedback engine tests coherent feature changes against that same model and returns one sentence. Feedback is model-estimated guidance, not separately labeled training data or a proven cause of design quality.
 
 To regenerate OCR/features and update the master and all split CSVs:
 
@@ -85,7 +86,7 @@ Regenerate the model splits with `python scripts/split_posteriq.py` (Python stan
 
 [api.py](api.py) hosts the trained model. **POST `/score`** accepts a multipart image field named `image` and returns JSON with `score`, `feedback_sentence`, feature measurements, ranked suggested changes and a PNG overlay. **GET `/health`** confirms readiness; **GET `/docs`** provides interactive API documentation.
 
-The existing [app.py](app.py) GUI is untouched. Your GUI agent only needs to send the uploaded file to this backend. Read [CLAUDE.md](CLAUDE.md) and the [copy-paste frontend integration](docs/gui-handoff.md).
+The Gradio GUI in [app.py](app.py) calls `PosterScorer` directly, so it does not need this backend; other frontends can send the uploaded file to it instead. Read [CLAUDE.md](CLAUDE.md) and the [copy-paste frontend integration](docs/gui-handoff.md).
 
 ```sh
 docker build -t poster-scorer .
@@ -95,3 +96,28 @@ curl -X POST http://localhost:7860/score -F "image=@poster.png"
 ```
 
 Use the [Hugging Face deployment instructions](docs/huggingface-spaces.md) for the free Gradio host adapter or the Docker alternative. `python scripts/prepare_space.py` packages the free Gradio route without changing the teammate-owned GUI. The held-out 33-poster test result is **RMSE 1.122, MAE 0.882, R² 0.408** on the original 1–10 scale. See [saved metrics](artifacts/metrics.json). Suggestions estimate changes the model favors; they are not causal explanations.
+
+## Gradio app (Hugging Face Space)
+
+[app.py](app.py) is the web interface. It loads `PosterScorer` once at startup, runs OCR once per upload, and shows:
+
+- the predicted design score out of 10, with a verdict from the dataset quartiles: below 4.0 is "Below typical", 4.0 to below 5.9 is "Typical", 5.9 or above is "Above typical";
+- the model's feedback sentence, shown exactly as `PosterScorer` returns it;
+- the overlay and the 14 extracted features.
+
+If the model bundle fails to load, the app fails at startup instead of falling back to a heuristic.
+
+Run it locally with Python 3.12 and Tesseract installed:
+
+```sh
+python -m pip install -r requirements.txt gradio==6.28.0
+python app.py
+```
+
+Deploy or update a Gradio Space (log in first with `hf auth login`). Hugging Face requires a PRO account or a paid organization to host Gradio Spaces on its CPU hardware:
+
+```sh
+python scripts/deploy_space.py --repo-id <user>/PosterScorer
+```
+
+The script uploads only the app, `features.py`, `poster_inference.py`, `score_feedback.py`, the model bundle, `requirements.txt`, `packages.txt`, the examples, and [space/README.md](space/README.md) as the Space README. It first checks that `features.py` matches the extractor hash in the model manifest.
