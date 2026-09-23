@@ -1,5 +1,16 @@
 # Connect the trained model to your GUI
 
+## Hosted backend
+
+- Space: https://huggingface.co/spaces/cmuchancel/poster-scorer
+- API base URL: `https://cmuchancel-poster-scorer.hf.space`
+- Upload endpoint: `POST https://cmuchancel-poster-scorer.hf.space/score` (multipart field `image`)
+- Readiness: `GET https://cmuchancel-poster-scorer.hf.space/health`
+- Interactive request tester: https://cmuchancel-poster-scorer.hf.space/docs
+
+The Space was uploaded on 2026-09-23. Check `/health` before wiring a demo; startup/build completion is independent of the repository upload.
+
+
 The complete inference interface is **`PosterScorer`**. The hostable backend is **`api.py`**, served by a Hugging Face Docker Space. Another teammate owns the GUI: connect their interface to this backend without replacing or redesigning their UI. Connecting requires no training job, dataset download, or external language model.
 
 ## Local Python integration

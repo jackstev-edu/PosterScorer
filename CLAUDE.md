@@ -1,5 +1,16 @@
 # Claude agent handoff: connect the trained poster scorer
 
+## Hosted backend
+
+- Space: https://huggingface.co/spaces/cmuchancel/poster-scorer
+- API base URL: `https://cmuchancel-poster-scorer.hf.space`
+- Upload endpoint: `POST https://cmuchancel-poster-scorer.hf.space/score` (multipart field `image`)
+- Readiness: `GET https://cmuchancel-poster-scorer.hf.space/health`
+- Interactive request tester: https://cmuchancel-poster-scorer.hf.space/docs
+
+The Space was uploaded on 2026-09-23. Check `/health` before wiring a demo; startup/build completion is independent of the repository upload.
+
+
 Your integration target is **`PosterScorer` in `poster_inference.py`**. A trained model and fitted feedback recipe are already committed; do not retrain to connect the GUI. The Hugging Face Docker Space serves the backend in `api.py`. Another teammate owns the GUI: preserve `app.py` and connect their interface to this API; do not replace or redesign it.
 
 ## Read these first
