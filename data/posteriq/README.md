@@ -5,11 +5,18 @@ A compact dataset of **219 posters**, copied from [creative-graphic-design/Poste
 ## Files
 
 - `posters.csv`: one row per poster, with columns `id`, `image_path`, and `overall_design_score`.
+- `train.csv` (153 rows), `validation.csv` (33 rows), and `test.csv` (33 rows): approximately 70/15/15 partitions with the same three columns.
 - `images/`: the 219 original source image files, without image transformations.
 - `source_info.json`: source and extraction metadata.
 - `SHA256SUMS`: checksums for verifying the data files.
 
-Image paths in `posters.csv` are relative to the directory containing the CSV. Scores are numeric `gt_json` values copied without scaling. The source rubric is 1–10; this bundle's observed scores range from 2.0 to 8.8.
+Image paths in all CSVs are relative to the directory containing the CSV and point to the shared `images/` directory; no images are duplicated. Scores are numeric `gt_json` values copied without scaling. The source rubric is 1–10; this bundle's observed scores range from 2.0 to 8.8.
+
+## Training splits
+
+Use `train.csv` for fitting, `validation.csv` for tuning, and reserve `test.csv` for final evaluation. The three partitions have no overlapping posters and together contain all 219 rows.
+
+To rebuild them from the repository root, run `python scripts/split_posteriq.py` (Python standard library only). The script sorts by numeric score and ID into three equal score bands of 73 posters. Using a local random generator seeded with 42, it shuffles each band and allocates 51 rows to train, 11 to validation, and 11 to test, then shuffles each final partition.
 
 ## Load in Python
 
@@ -31,7 +38,9 @@ score = float(row["overall_design_score"])
 print(row["id"], image.size, score)
 ```
 
-These labels measure **overall design quality**, not whether a poster needs more text. Text quantity or text-need labels must be added separately. This source is a benchmark **test** split; after using these examples for training or model selection, do not treat them as a held-out test set.
+Replace `posters.csv` in the example with a split filename to load that partition.
+
+These labels measure **overall design quality**, not whether a poster needs more text. Text quantity or text-need labels must be added separately. All images came from the upstream benchmark's **test** split. This project's `test.csv` is a separate partition and remains held out only if its examples are excluded from training and tuning; training on this collection means the full upstream test split is no longer held out for your model.
 
 ## Source and usage
 
